@@ -1,1 +1,947 @@
-@/mnt/agents/output/app/index.html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://openrouter.ai; media-src blob:; form-action 'none'; base-uri 'none'; frame-ancestors 'none'">
+<title>Транскрибация · OpenRouter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235541EA'/%3E%3Cg fill='%23ffffff'%3E%3Crect x='10' y='26' width='5' height='12' rx='2.5'/%3E%3Crect x='19' y='18' width='5' height='28' rx='2.5'/%3E%3Crect x='28' y='10' width='5' height='44' rx='2.5'/%3E%3Crect x='37' y='18' width='5' height='28' rx='2.5'/%3E%3Crect x='46' y='26' width='5' height='12' rx='2.5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0b0b0f;
+    --surface: #131318;
+    --surface-2: #1a1a21;
+    --line: #26262e;
+    --text: #e8e8ec;
+    --muted: #8a8a96;
+    --accent: #5541EA;
+    --accent-dim: rgba(85, 65, 234, 0.14);
+    --ok: #3ecf8e;
+    --warn: #f0b429;
+    --err: #f0564a;
+    --mono: "SF Mono", "Fira Code", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 96px;
+  }
+
+  /* ---- header ---- */
+  header { padding: 24px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  h1 { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.2; }
+  .sub { color: var(--muted); font-size: 14.5px; margin-top: 8px; max-width: 56ch; }
+
+  /* ---- sections ---- */
+  section { margin-bottom: 28px; }
+  .sec-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .sec-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  label.field-label { display: block; font-size: 14px; color: var(--muted); margin: 0 0 6px 2px; }
+  input[type="text"], input[type="password"], select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  textarea { font-family: var(--sans); resize: vertical; min-height: 72px; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+  /* переопределяем бледно-жёлтую заливку автозаполнения (Firefox/Chrome) */
+  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text);
+    -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+    transition: background-color 9999s ease-in-out 0s;
+    caret-color: var(--text);
+  }
+  input:autofill {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    filter: none !important;
+  }
+  /* внутренняя заливка inset-тенью не должна вылезать за скруглённые углы —
+     из-за неё углы рамки выглядели «толще» */
+  input:-moz-autofill, input:autofill,
+  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+    box-shadow: 0 0 0 1000px var(--surface) inset;
+    border-radius: 10px;
+    background-clip: padding-box;
+    /* убираем серую «рамку уведомления» Firefox вокруг автозаполненного поля */
+    outline: none !important;
+  }
+
+  /* поле ключа + кнопка «показать» */
+  .key-wrap { position: relative; }
+  .key-wrap input { padding-right: 48px; }
+  .key-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+  .key-toggle:hover { color: var(--text); }
+  .key-toggle:focus-visible { outline: 1px solid var(--accent); }
+  .key-toggle svg { width: 20px; height: 20px; }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8a96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .hint { font-size: 14px; color: var(--muted); margin-top: 6px; padding-left: 2px; }
+  .hint a { color: var(--accent); text-decoration: none; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
+
+  /* ---- dropzone ---- */
+  .dropzone {
+    border: 1.5px dashed var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
+  .dropzone .dz-title { font-size: 16px; font-weight: 600; }
+  .dropzone .dz-sub { font-family: var(--mono); font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .filecard {
+    display: none;
+    margin-top: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 14px;
+    align-items: center;
+    gap: 10px;
+  }
+  .filecard.visible { display: flex; }
+  .filecard .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .filecard .fsize { color: var(--muted); flex-shrink: 0; }
+  .filecard .fremove {
+    flex-shrink: 0; background: none; border: none; color: var(--muted);
+    font-size: 18px; cursor: pointer; padding: 4px 8px; min-height: 32px;
+  }
+  .filecard .fremove:hover { color: var(--err); }
+  .warn-box {
+    display: none;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    background: rgba(240, 180, 41, 0.08);
+    border: 1px solid rgba(240, 180, 41, 0.25);
+    color: var(--warn);
+  }
+  .warn-box.visible { display: block; }
+
+  /* ---- checkbox ---- */
+  .check-row { display: flex; align-items: center; gap: 10px; padding: 4px 2px; min-height: 44px; cursor: pointer; }
+  .check-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .check-row span { font-size: 14px; }
+
+  /* ---- buttons ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 24px;
+    min-height: 48px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 14px;
+    padding: 10px 16px;
+    min-height: 44px;
+  }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .btn-danger { background: none; border: 1px solid var(--err); color: var(--err); width: 100%; }
+
+  /* ---- progress ---- */
+  #progress-block { display: none; }
+  #progress-block.visible { display: block; }
+  .bar {
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+  .bar-fill.indeterminate { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  #status-line { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+  #status-line .ok { color: var(--ok); }
+  #status-line .err { color: var(--err); }
+
+  /* ---- result ---- */
+  #result-block { display: none; }
+  #result-block.visible { display: block; }
+  #result-text {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 50vh;
+    overflow-y: auto;
+    min-height: 120px;
+  }
+  #result-text:empty::before { content: "Здесь появится транскрипт…"; color: var(--muted); }
+  .result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .meta-line { font-family: var(--mono); font-size: 14px; color: var(--muted); margin-top: 10px; }
+
+  details { margin-top: 4px; }
+  summary { cursor: pointer; font-size: 14px; color: var(--muted); padding: 6px 2px; min-height: 32px; }
+  summary:hover { color: var(--text); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">OpenRouter · audio → text</div>
+    <h1>Транскрибация аудио</h1>
+    <p class="sub">Локальный файл → OpenRouter (transcription API) → текст на этой странице.
+      Ключ и файл никуда не отправляются, кроме API OpenRouter. Всё работает в браузере.</p>
+  </header>
+
+  <!-- форма-обёртка нужна, чтобы браузер предложил сохранить ключ в менеджере паролей -->
+  <form id="key-form" autocomplete="on">
+    <!-- скрытое поле логина: менеджер паролей требует пару логин+пароль -->
+    <input type="text" name="username" autocomplete="username" value="openrouter"
+           style="position:absolute;left:-9999px;top:-9999px;opacity:0" tabindex="-1" aria-hidden="true">
+    <section>
+      <div class="sec-label">01 · Ключ API</div>
+      <label class="field-label" for="api-key">OpenRouter API key</label>
+      <div class="key-wrap">
+        <input type="password" id="api-key" name="password" autocomplete="current-password"
+               placeholder="sk-or-…" spellcheck="false" required>
+        <button type="button" class="key-toggle" id="key-toggle" aria-label="Показать ключ" title="Показать / скрыть ключ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="hint">Ключ хранит менеджер паролей браузера. При запуске транскрибации браузер предложит сохранить ключ. Получить ключ: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></div>
+    </section>
+  </form>
+
+  <section>
+    <div class="sec-label">02 · Файл</div>
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Выбрать аудиофайл">
+      <div class="dz-title">Выберите или перетащите аудиофайл</div>
+      <div class="dz-sub">mp3 · wav · m4a · ogg · flac · до ~120 МБ (≈2 часа записи)</div>
+    </div>
+    <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.m4a,.ogg,.oga,.flac,.opus,.aac,.webm" hidden>
+    <div class="filecard" id="filecard">
+      <span class="fname" id="fname"></span>
+      <span class="fsize" id="fsize"></span>
+      <button class="fremove" id="fremove" aria-label="Убрать файл">×</button>
+    </div>
+    <div class="warn-box" id="warn-box"></div>
+  </section>
+
+  <section>
+    <div class="sec-label">03 · Настройки</div>
+    <div class="row-2">
+      <div>
+        <label class="field-label" for="model">Модель</label>
+        <select id="model">
+          <optgroup label="Whisper (OpenAI)">
+            <option value="openai/whisper-large-v3-turbo" selected>Whisper V3 Turbo — $0,011/час · быстрый, оптимум</option>
+            <option value="openai/whisper-large-v3">Whisper Large V3 — $0,029/час · точнее, ~3× медленнее</option>
+            <option value="openai/whisper-1">Whisper-1 (v2, хост OpenAI) — $0,36/час · нет смысла</option>
+          </optgroup>
+          <optgroup label="С диаризацией (разметка спикеров)">
+            <option value="elevenlabs/scribe-v2">ElevenLabs Scribe v2 — $0,11/час · топ качество, спикеры</option>
+            <option value="x-ai/grok-stt-1.0">Grok STT 1.0 — $0,10/час · спикеры, word-таймкоды</option>
+            <option value="google/gemini-3.5-transcribe">Gemini 3.5 Transcribe — ~$0,22/час · спикеры</option>
+            <option value="fish-audio/transcribe-1-pro">Fish Transcribe 1 Pro — $0,36/час · спикеры + эмоции</option>
+          </optgroup>
+          <optgroup label="Без таймкодов">
+            <option value="openai/gpt-4o-mini-transcribe">GPT-4o Mini Transcribe — $0,005/час · самый дешёвый</option>
+            <option value="openai/gpt-4o-transcribe">GPT-4o Transcribe — $0,009/час · точнее mini</option>
+            <option value="mistralai/voxtral-mini-transcribe">Voxtral Mini Transcribe — $0,18/час · качество выше Whisper</option>
+            <option value="qwen/qwen3-asr-0.6b">Qwen3 ASR 0.6B — $0,012/час · дёшево, 30 языков</option>
+            <option value="qwen/qwen3-asr-1.7b">Qwen3 ASR 1.7B — $0,027/час · точнее 0.6B</option>
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="lang">Язык записи</label>
+        <select id="lang">
+          <option value="ru" selected>русский</option>
+          <option value="be">белорусский</option>
+          <option value="en">английский</option>
+          <option value="uk">украинский</option>
+          <option value="pl">польский</option>
+          <option value="de">немецкий</option>
+          <option value="auto">автоопределение</option>
+        </select>
+      </div>
+    </div>
+    <label class="check-row" id="ts-row">
+      <input type="checkbox" id="ts" checked>
+      <span>Таймкоды [мм:сс] в начале каждого сегмента (точные, из модели)</span>
+    </label>
+    <label class="check-row" id="srt-row">
+      <input type="checkbox" id="want-srt">
+      <span>Дополнительно собрать файл субтитров .srt</span>
+    </label>
+    <label class="check-row" id="diarize-row" style="display:none">
+      <input type="checkbox" id="diarize">
+      <span>Разметка спикеров (диаризация) — кто что сказал</span>
+    </label>
+    <div class="hint" id="engine-hint"></div>
+  </section>
+
+  <button class="btn btn-primary" id="start-btn" disabled>Транскрибировать</button>
+
+  <section id="progress-block">
+    <div class="sec-label">Прогресс</div>
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    <div id="status-line">—</div>
+    <div style="margin-top:12px">
+      <button class="btn btn-danger" id="abort-btn" style="display:none">Отменить</button>
+    </div>
+  </section>
+
+  <section id="result-block">
+    <div class="sec-label">Результат</div>
+    <div id="result-text"></div>
+    <div class="meta-line" id="result-meta"></div>
+    <div class="result-actions">
+      <button class="btn btn-ghost" id="copy-btn">Копировать</button>
+      <button class="btn btn-ghost" id="dl-txt">Скачать .txt</button>
+      <button class="btn btn-ghost" id="dl-md">Скачать .md</button>
+      <button class="btn btn-ghost" id="dl-srt" style="display:none">Скачать .srt</button>
+    </div>
+  </section>
+
+  <footer>
+    Single-file app · Запросы идут только в openrouter.ai · Сохраните эту страницу (Ctrl+S) и проверьте её код любой LLM
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+const CHUNK_SECONDS = 240;      // длина одного чанка для длинных файлов
+const TARGET_SR = 16000;        // Whisper любит 16 кГц моно
+const FILE_LIMIT = 120 * 1024 * 1024;   // 120 МБ — предохранитель от OOM при декодировании
+const DIRECT_LIMIT = 18 * 1024 * 1024;  // до 18 МБ — отправляем как есть, без нарезки
+
+const els = {
+  key: $("api-key"), keyToggle: $("key-toggle"),
+  dz: $("dropzone"), fileInput: $("file-input"),
+  filecard: $("filecard"), fname: $("fname"), fsize: $("fsize"), fremove: $("fremove"),
+  warnBox: $("warn-box"),
+  model: $("model"), lang: $("lang"), ts: $("ts"), tsRow: $("ts-row"),
+  wantSrt: $("want-srt"), diarize: $("diarize"), engineHint: $("engine-hint"),
+  startBtn: $("start-btn"), abortBtn: $("abort-btn"),
+  progressBlock: $("progress-block"), barFill: $("bar-fill"), statusLine: $("status-line"),
+  resultBlock: $("result-block"), resultText: $("result-text"), resultMeta: $("result-meta"),
+  copyBtn: $("copy-btn"), dlTxt: $("dl-txt"), dlMd: $("dl-md"), dlSrt: $("dl-srt"),
+  diarizeRow: $("diarize-row"), srtRow: $("srt-row"),
+};
+
+let currentFile = null;
+let abortCtrl = null;
+let transcript = "";
+
+/* ---------- модели: тарифы и возможности ---------- */
+/* rate — текст про цену; ts — умеет ли сегментные/word таймкоды;
+   diarize — поддерживает ли разметку спикеров */
+const MODELS = {
+  "openai/whisper-large-v3-turbo":  { rate: "$0,011/час аудио", ts: true,  diarize: false, hint: "Быстрый и дешёвый, точные сегментные таймкоды." },
+  "openai/whisper-large-v3":        { rate: "$0,029/час аудио", ts: true,  diarize: false, hint: "Точнее turbo, но медленнее и дороже." },
+  "openai/whisper-1":               { rate: "$0,36/час аудио",  ts: true,  diarize: false, hint: "Старая модель по высокой цене — смысла нет, оставлена для полноты." },
+  "elevenlabs/scribe-v2":           { rate: "$0,11/час аудио",  ts: true,  diarize: true,  hint: "Топ качество распознавания, word-таймкоды и разметка спикеров. Диаризация может тарифицироваться отдельно." },
+  "x-ai/grok-stt-1.0":              { rate: "$0,10/час аудио",  ts: true,  diarize: true,  hint: "Спикеры и word-таймкоды. Диаризация может тарифицироваться отдельно." },
+  "google/gemini-3.5-transcribe":   { rate: "~$0,22/час аудио", ts: true,  diarize: true,  hint: "STT от Google: word-таймкоды и спикеры. Тарификация за токены: ~$0,22/час при типичной длине текста, но на болтовне с длинной расшифровкой может быть до ~$0,5/час." },
+  "fish-audio/transcribe-1-pro":    { rate: "$0,36/час аудио",  ts: true,  diarize: true,  hint: "Заточена под интервью и подкасты: спикеры, эмоции и звуковые события ([laughter], [sigh]). Файлы до 60 минут без нарезки. Диаризация может вернуться в тексте тегами <|speaker:N|> — формат зависит от шлюза OpenRouter." },
+  "openai/gpt-4o-mini-transcribe":  { rate: "$0,005/час аудио", ts: false, diarize: false, hint: "Самый дешёвый вариант. Таймкоды и SRT недоступны — модель их не отдаёт." },
+  "openai/gpt-4o-transcribe":       { rate: "$0,009/час аудио", ts: false, diarize: false, hint: "Точнее mini, всё ещё дёшево. Таймкоды и SRT недоступны." },
+  "mistralai/voxtral-mini-transcribe": { rate: "$0,18/час аудио", ts: false, diarize: false, hint: "Mistral заявляет качество выше Whisper. Таймкоды не гарантированы." },
+  "qwen/qwen3-asr-0.6b":            { rate: "$0,012/час аудио", ts: false, diarize: false, hint: "Экспериментально: 30 языков, таймкоды зависят от провайдера и не гарантированы." },
+  "qwen/qwen3-asr-1.7b":            { rate: "$0,027/час аудио", ts: false, diarize: false, hint: "Экспериментально: точнее 0.6B, таймкоды не гарантированы." },
+};
+
+/* ---------- восстановление настроек ---------- */
+/* ключ API в localStorage НЕ храним — его хранит менеджер паролей браузера */
+els.model.value = localStorage.getItem("or_model") || "openai/whisper-large-v3-turbo";
+if (!MODELS[els.model.value]) els.model.value = "openai/whisper-large-v3-turbo"; // на случай старого сохранённого значения
+els.lang.value = localStorage.getItem("or_lang") || "ru";
+els.ts.checked = localStorage.getItem("or_ts") !== "0";
+els.wantSrt.checked = localStorage.getItem("or_srt") === "1";
+els.diarize.checked = localStorage.getItem("or_diarize") === "1";
+
+/* показать/скрыть ключ */
+els.keyToggle.addEventListener("click", () => {
+  const show = els.key.type === "password";
+  els.key.type = show ? "text" : "password";
+  els.keyToggle.setAttribute("aria-label", show ? "Скрыть ключ" : "Показать ключ");
+  els.keyToggle.style.color = show ? "var(--accent)" : "";
+});
+
+/* предотвращаем реальный сабмит формы — она существует только для менеджера паролей */
+$("key-form").addEventListener("submit", e => e.preventDefault());
+
+els.model.addEventListener("change", () => {
+  localStorage.setItem("or_model", els.model.value);
+  updateEngineUI();
+});
+els.lang.addEventListener("change", () => localStorage.setItem("or_lang", els.lang.value));
+els.ts.addEventListener("change", () => localStorage.setItem("or_ts", els.ts.checked ? "1" : "0"));
+els.wantSrt.addEventListener("change", () => localStorage.setItem("or_srt", els.wantSrt.checked ? "1" : "0"));
+els.diarize.addEventListener("change", () => localStorage.setItem("or_diarize", els.diarize.checked ? "1" : "0"));
+
+function modelCaps() { return MODELS[els.model.value] || { rate: "за секунды аудио", ts: false, diarize: false, hint: "" }; }
+
+function updateEngineUI() {
+  const caps = modelCaps();
+  els.tsRow.style.display = caps.ts ? "flex" : "none";
+  els.srtRow.style.display = caps.ts ? "flex" : "none";
+  els.diarizeRow.style.display = caps.diarize ? "flex" : "none";
+  els.engineHint.textContent =
+    `${caps.hint} Тариф ${caps.rate}. Фактическая стоимость показывается после запроса.`;
+}
+updateEngineUI();
+
+/* ---------- file pick ---------- */
+els.dz.addEventListener("click", () => els.fileInput.click());
+els.dz.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); els.fileInput.click(); } });
+["dragenter", "dragover"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.add("drag"); }));
+["dragleave", "drop"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.remove("drag"); }));
+els.dz.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) pickFile(f); });
+els.fileInput.addEventListener("change", () => { const f = els.fileInput.files[0]; if (f) pickFile(f); });
+els.fremove.addEventListener("click", () => { currentFile = null; els.filecard.classList.remove("visible"); els.warnBox.classList.remove("visible"); refreshStartBtn(); });
+
+function pickFile(f) {
+  currentFile = f;
+  els.fname.textContent = f.name;
+  els.fsize.textContent = (f.size / 1024 / 1024).toFixed(1).replace(".", ",") + " МБ";
+  els.filecard.classList.add("visible");
+  const warn = [];
+  if (f.size > FILE_LIMIT) {
+    warn.push("Файл больше 120 МБ — браузер может не хватить памяти при декодировании. Лучше сожмите (например, в mp3 64 кбит/с).");
+    currentFile = null;
+    els.filecard.classList.remove("visible");
+  } else if (f.size > DIRECT_LIMIT) {
+    warn.push("Файл большой: браузер нарежет его на части по 4 минуты (моно 16 кГц) и отправит последовательно. Таймкоды будут глобальными.");
+  }
+  els.warnBox.textContent = warn.join(" ");
+  els.warnBox.classList.toggle("visible", warn.length > 0);
+  refreshStartBtn();
+}
+
+els.key.addEventListener("input", refreshStartBtn);
+
+function refreshStartBtn() {
+  els.startBtn.disabled = !(currentFile && els.key.value.trim());
+}
+
+/* ---------- OpenRouter STT (Whisper) ---------- */
+/* удобный формат длительности: "12 с" · "6 м 32 с" · "1 ч 05 м" */
+function fmtDur(sec) {
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h} ч ${String(m).padStart(2, "0")} м`;
+  if (m > 0) return `${m} м ${String(s).padStart(2, "0")} с`;
+  return `${s} с`;
+}
+/* то же, но без округления: "3,6 с" · "6 м 32 с" */
+function fmtDurPrecise(sec) {
+  if (sec < 60) return String(sec.toFixed(1)).replace(".", ",").replace(/,0$/, "") + " с";
+  return fmtDur(sec);
+}
+/* длительность аудиофайла без полного PCM-декодирования (лёгкая) */
+function probeDuration(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const a = new Audio();
+    a.preload = "metadata";
+    a.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(a.duration); };
+    a.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    a.src = url;
+  });
+}
+
+function fmtTS(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600);
+  const m = String(Math.floor(sec % 3600 / 60)).padStart(2, "0");
+  const s = String(sec % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+}
+function fmtSrtTime(sec) {
+  const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+  const m = String(Math.floor(sec % 3600 / 60)).padStart(2, "0");
+  const s = String(Math.floor(sec % 60)).padStart(2, "0");
+  const ms = String(Math.round((sec % 1) * 1000)).padStart(3, "0");
+  return `${h}:${m}:${s},${ms}`;
+}
+
+/* Возвращает { text, segments:[{start,end,text}], words:[{start,end,text,speaker}], usage } */
+async function transcribeSTT(base64, format, withTimestamps) {
+  const caps = modelCaps();
+  const wantTs = withTimestamps && caps.ts;
+  const wantDiarize = els.diarize.checked && caps.diarize;
+  const verbose = wantTs || wantDiarize;
+  const body = {
+    model: els.model.value,
+    input_audio: { data: base64, format: format },
+    response_format: verbose ? "verbose_json" : "json",
+  };
+  if (verbose) {
+    body.timestamp_granularities = wantDiarize ? ["word"] : ["segment"];
+  }
+  if (wantDiarize) body.diarize = true;
+  if (els.lang.value !== "auto") body.language = els.lang.value;
+
+  const res = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+    method: "POST",
+    signal: abortCtrl.signal,
+    headers: {
+      "Authorization": "Bearer " + els.key.value.trim(),
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://local.transcriber/",
+      "X-Title": "Local Audio Transcriber"
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = res.status + " " + res.statusText;
+    try { const j = await res.json(); if (j.error && j.error.message) msg += " — " + j.error.message; } catch (e) {}
+    if (res.status === 400 && wantDiarize) msg += " (возможно, модель не поддерживает диаризацию — попробуйте без неё)";
+    throw new Error(msg);
+  }
+  const j = await res.json();
+  return {
+    text: (j.text || "").trim(),
+    segments: Array.isArray(j.segments) ? j.segments : null,
+    words: Array.isArray(j.words) ? j.words : null,
+    usage: j.usage || null
+  };
+}
+
+/* Собирает word-поток с метками спикеров в реплики:
+   новая реплика при смене спикера или паузе > 2 с */
+function buildUtterances(words) {
+  const PAUSE = 2.0;
+  const utts = [];
+  let cur = null;
+  for (const w of words) {
+    const sp = w.speaker_label || w.speaker || "?";
+    const t = (w.text || w.word || "").trim();
+    if (!t) continue;
+    if (!cur || cur.speaker !== sp || (w.start - cur.end) > PAUSE) {
+      if (cur) utts.push(cur);
+      cur = { speaker: sp, start: w.start, end: w.end != null ? w.end : w.start, text: t };
+    } else {
+      cur.text += (t.match(/^[,.!?:;…%)]/) ? "" : " ") + t;
+      if (w.end != null) cur.end = w.end;
+    }
+  }
+  if (cur) utts.push(cur);
+  return utts;
+}
+
+/* Нумеруем спикеров по порядку появления: "Спикер 1", "Спикер 2"… */
+function speakerNamer() {
+  const map = new Map();
+  return sp => {
+    if (!map.has(sp)) map.set(sp, map.size + 1);
+    return "Спикер " + map.get(sp);
+  };
+}
+
+/* ---------- helpers ---------- */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(",")[1]);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+function extFormat(name, mime) {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  const map = { mp3: "mp3", mpeg: "mp3", wav: "wav", wave: "wav", m4a: "m4a", aac: "aac",
+                ogg: "ogg", oga: "ogg", opus: "opus", flac: "flac", webm: "webm", mp4: "mp4" };
+  if (map[ext]) return map[ext];
+  if (mime && mime.startsWith("audio/")) return mime.slice(6).split(";")[0];
+  return "mp3";
+}
+
+function encodeWAV(samples, sampleRate) {
+  const len = samples.length;
+  const buf = new ArrayBuffer(44 + len * 2);
+  const v = new DataView(buf);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0, "RIFF"); v.setUint32(4, 36 + len * 2, true); ws(8, "WAVE");
+  ws(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  ws(36, "data"); v.setUint32(40, len * 2, true);
+  for (let i = 0; i < len; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
+/* Декодирует файл, микшует в моно, режет на WAV-чанки 16 кГц. Возвращает { chunks, duration } */
+async function chunkFile(file) {
+  setStatusText("Декодирование аудио в браузере…");
+  let arr = await file.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = new AC();
+  let decoded;
+  try {
+    decoded = await ac.decodeAudioData(arr);
+  } catch (e) {
+    throw new Error("Не удалось декодировать аудио — формат не поддерживается браузером или файл повреждён.");
+  } finally { ac.close(); }
+  /* исходный ArrayBuffer дальше не нужен — отпускаем до 120 МБ памяти */
+  arr = null;
+  if (abortCtrl && abortCtrl.signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+  const dur = decoded.duration;
+  const sr = decoded.sampleRate;
+  const total = Math.floor(dur * sr);
+  const mono = new Float32Array(total);
+  for (let c = 0; c < decoded.numberOfChannels; c++) {
+    const d = decoded.getChannelData(c);
+    for (let i = 0; i < total; i++) mono[i] += d[i] / decoded.numberOfChannels;
+  }
+  /* decoded (~10× размера файла в RAM) дальше не используется — отпускаем явно,
+     чтобы GC забрал его до цикла нарезки, а не в конце функции */
+  decoded = null;
+
+  const chunkLen = CHUNK_SECONDS * sr;
+  const nChunks = Math.max(1, Math.ceil(total / chunkLen));
+  const chunks = [];
+  for (let n = 0; n < nChunks; n++) {
+    if (abortCtrl && abortCtrl.signal.aborted) throw new DOMException("Aborted", "AbortError");
+    setStatusText(`Нарезка: часть ${n + 1} из ${nChunks}…`);
+    const slice = mono.slice(n * chunkLen, Math.min(total, (n + 1) * chunkLen));
+    // ресемплинг в 16 кГц через OfflineAudioContext
+    const outLen = Math.ceil(slice.length * TARGET_SR / sr);
+    const off = new OfflineAudioContext(1, outLen, TARGET_SR);
+    const b = off.createBuffer(1, slice.length, sr);
+    b.copyToChannel(slice, 0);
+    const src = off.createBufferSource();
+    src.buffer = b;
+    src.connect(off.destination);
+    src.start();
+    const rendered = await off.startRendering();
+    chunks.push(encodeWAV(rendered.getChannelData(0), TARGET_SR));
+  }
+  return { chunks, duration: dur };
+}
+
+/* ---------- status / progress ---------- */
+/* По умолчанию статус выводится как текст (безопасно).
+   setStatusHtml — только для статических строк с собственной разметкой,
+   НИКОГДА не подставлять туда данные от API или от пользователя. */
+function setStatusText(text) { els.statusLine.textContent = text; }
+function setStatusHtml(html) { els.statusLine.innerHTML = html; }
+function setStatusErr(text) {
+  els.statusLine.innerHTML = "";
+  const span = document.createElement("span");
+  span.className = "err";
+  span.textContent = "Ошибка: " + text;
+  els.statusLine.appendChild(span);
+}
+function setBar(pct) {
+  els.barFill.classList.remove("indeterminate");
+  els.barFill.style.width = pct + "%";
+  /* 0% = сброс: убираем и анимацию, и остаточную ширину */
+  if (pct === 0) els.barFill.style.marginLeft = "";
+}
+function setBarIndeterminate() {
+  els.barFill.classList.add("indeterminate");
+  els.barFill.style.width = "30%";
+}
+
+/* ---------- main flow ---------- */
+let srtSegments = []; // глобальные таймкоды для .srt
+
+els.startBtn.addEventListener("click", async () => {
+  if (!currentFile || !els.key.value.trim()) return;
+
+  /* триггерим сабмит формы — браузер предложит сохранить ключ в менеджере паролей */
+  $("key-form").requestSubmit();
+
+  abortCtrl = new AbortController();
+  transcript = "";
+  srtSegments = [];
+  let totalCost = 0, hasCost = false;
+  els.resultText.textContent = "";
+  els.resultMeta.textContent = "";
+  els.dlSrt.style.display = "none";
+  els.resultBlock.classList.add("visible");
+  els.progressBlock.classList.add("visible");
+  els.abortBtn.style.display = "";
+  els.startBtn.disabled = true;
+  els.resultText.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  const t0 = performance.now();
+  let recDuration = null;
+  try {
+    if (currentFile.size <= DIRECT_LIMIT) {
+      /* прямая отправка */
+      const probe = probeDuration(currentFile).then(d => { recDuration = d; });
+      setBarIndeterminate();
+      setStatusText("Загрузка файла в OpenRouter…");
+      const b64 = await blobToBase64(currentFile);
+      const fmt = extFormat(currentFile.name, currentFile.type);
+
+      setStatusText("Транскрибация…");
+      const r = await transcribeSTT(b64, fmt, els.ts.checked || els.wantSrt.checked);
+      if (r.words && els.diarize.checked) {
+        const name = speakerNamer();
+        const utts = buildUtterances(r.words);
+        const showTs = els.ts.checked;
+        transcript = utts.map(u =>
+          (showTs ? `[${fmtTS(u.start)}] ` : "") + `${name(u.speaker)}: ${u.text}`
+        ).join("\n");
+        /* в SRT времена идут всегда — это суть формата */
+        srtSegments = utts.map(u => ({ start: u.start, end: u.end, text: `${name(u.speaker)}: ${u.text}` }));
+      } else if (r.segments) {
+        const showTs = els.ts.checked || els.wantSrt.checked;
+        if (showTs) {
+          transcript = r.segments.map(s => `[${fmtTS(s.start)}] ${s.text.trim()}`).join("\n");
+        } else {
+          transcript = r.segments.map(s => s.text.trim()).filter(Boolean).join("\n\n");
+        }
+        srtSegments = r.segments.map(s => ({ start: s.start, end: s.end, text: s.text.trim() }));
+      } else {
+        transcript = r.text;
+      }
+      if (r.usage && typeof r.usage.cost === "number") { totalCost += r.usage.cost; hasCost = true; }
+      els.resultText.textContent = transcript;
+      await probe;
+    } else {
+      /* нарезка + последовательная отправка */
+      const { chunks, duration } = await chunkFile(currentFile);
+      recDuration = duration;
+      const n = chunks.length;
+      const name = speakerNamer();
+      for (let i = 0; i < n; i++) {
+        const offset = i * CHUNK_SECONDS;
+        setBar((i) / n * 100);
+        setStatusText(`Часть ${i + 1} из ${n} · загрузка…`);
+        const b64 = await blobToBase64(chunks[i]);
+
+        const r = await transcribeSTT(b64, "wav", els.ts.checked || els.wantSrt.checked);
+        if (r.words && els.diarize.checked) {
+          const utts = buildUtterances(r.words);
+          const showTs = els.ts.checked;
+          for (const u of utts) {
+            const sp = name(u.speaker);
+            transcript += (showTs ? `[${fmtTS(u.start + offset)}] ` : "") + `${sp}: ${u.text}\n`;
+            srtSegments.push({ start: u.start + offset, end: u.end + offset, text: `${sp}: ${u.text}` });
+          }
+        } else if (r.segments) {
+          const showTs = els.ts.checked || els.wantSrt.checked;
+          for (const s of r.segments) {
+            const t = s.text.trim();
+            if (!t) continue;
+            transcript += showTs ? `[${fmtTS(s.start + offset)}] ${t}\n` : `${t}\n\n`;
+            srtSegments.push({ start: s.start + offset, end: s.end + offset, text: t });
+          }
+        } else {
+          if (transcript && !transcript.endsWith("\n")) transcript += "\n\n";
+          transcript += r.text;
+        }
+        if (r.usage && typeof r.usage.cost === "number") { totalCost += r.usage.cost; hasCost = true; }
+        els.resultText.textContent = transcript;
+        els.resultText.scrollTop = els.resultText.scrollHeight;
+        setStatusHtml(`Часть ${i + 1} из ${n} · <span class="ok">готово</span>`);
+      }
+      setBar(100);
+    }
+
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    const secsStr = secs.replace(".", ",");
+    /* стоимость: значащие знаки без шума double, запятая как разделитель */
+    function fmtCost(v) {
+      if (!(v > 0)) return "$0";
+      let s = v.toPrecision(6);                  // "0.110000" / "3.00000e-5"
+      if (s.includes("e")) {                     // совсем мелочь: разворачиваем экспоненту
+        s = v.toFixed(20).replace(/0+$/, "");
+      }
+      s = s.replace(/\.?0+$/, "");               // убрать хвостовые нули
+      const [int, frac = ""] = s.split(".");
+      return "$" + int + (frac ? "," + frac.slice(0, 10) : "");
+    }
+    const costStr = hasCost ? ` · стоимость ${fmtCost(totalCost)}` : " · стоимость не сообщена API";
+    const durStr = recDuration ? `Длительность записи ${fmtDur(recDuration)}, обработана за` : "Готово за";
+    els.resultMeta.textContent = `${transcript.length} символов · ${secsStr} с · ${els.model.value}${costStr}`;
+    setStatusHtml(`<span class="ok">${durStr} ${fmtDurPrecise(parseFloat(secs))}${costStr}</span>`);
+    /* блок статистики в конце текста результата (в .md превращается в заголовок) */
+    const stats =
+      `\n\n===\n\nСтатистика.\n` +
+      (recDuration ? `Длительность записи ${fmtDur(recDuration)}\n` : "") +
+      `Обработана за ${fmtDurPrecise(parseFloat(secs))}\n` +
+      `Стоимость ${hasCost ? fmtCost(totalCost) : "не сообщена API"}\n` +
+      `Модель ${els.model.value}`;
+    transcript += stats;
+    els.resultText.textContent = transcript;
+    els.resultText.scrollTop = els.resultText.scrollHeight;
+    setBar(100);
+    if (srtSegments.length) els.dlSrt.style.display = "inline-flex";
+  } catch (err) {
+    setBar(0); /* ошибка/отмена — полоса не должна продолжать «бегать» */
+    if (err.name === "AbortError") {
+      if (transcript.trim()) {
+        setStatusHtml('<span class="err">Отменено.</span> Частичный результат сохранён — можно скачать ниже.');
+        if (srtSegments.length) els.dlSrt.style.display = "inline-flex";
+      } else {
+        setStatusHtml('<span class="err">Отменено пользователем</span>');
+      }
+    } else {
+      setStatusErr(err.message);
+    }
+  } finally {
+    abortCtrl = null;
+    els.abortBtn.style.display = "none";
+    els.startBtn.disabled = false;
+    refreshStartBtn();
+  }
+});
+
+els.abortBtn.addEventListener("click", () => { if (abortCtrl) abortCtrl.abort(); });
+
+/* ---------- export ---------- */
+function download(name, text, mime) {
+  const blob = new Blob(["\ufeff" + text], { type: mime + ";charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function baseName() {
+  return (currentFile ? currentFile.name.replace(/\.[^.]+$/, "") : "transcript") || "transcript";
+}
+/* имя модели с провайдером: "openai/whisper-large-v3" → "openai-whisper-large-v3" */
+function modelSlug() {
+  return els.model.value.replace(/[^a-z0-9.-]+/gi, "-");
+}
+els.dlTxt.addEventListener("click", () => download(`${baseName()}-${modelSlug()}.txt`, transcript, "text/plain"));
+els.dlMd.addEventListener("click", () => {
+  const md = (`# Транскрипт: ${currentFile ? currentFile.name : "аудио"}\n\n` +
+    `_Модель: ${els.model.value} · ${new Date().toLocaleString()}_\n\n---\n\n` + transcript)
+    .replace("\n\n===\n\nСтатистика.", "\n\n---\n\n## Статистика");
+  download(`${baseName()}-${modelSlug()}.md`, md, "text/markdown");
+});
+els.dlSrt.addEventListener("click", () => {
+  const srt = srtSegments.map((s, i) =>
+    `${i + 1}\n${fmtSrtTime(s.start)} --> ${fmtSrtTime(s.end)}\n${s.text}\n`
+  ).join("\n");
+  download(`${baseName()}-${modelSlug()}.srt`, srt, "application/x-subrip");
+});
+els.copyBtn.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(transcript);
+  els.copyBtn.textContent = "Скопировано ✓";
+  setTimeout(() => els.copyBtn.textContent = "Копировать", 1500);
+});
+</script>
+</body>
+</html>
