@@ -749,6 +749,8 @@ function setStatusErr(text) {
 function setBar(pct) {
   els.barFill.classList.remove("indeterminate");
   els.barFill.style.width = pct + "%";
+  /* 0% = сброс: убираем и анимацию, и остаточную ширину */
+  if (pct === 0) els.barFill.style.marginLeft = "";
 }
 function setBarIndeterminate() {
   els.barFill.classList.add("indeterminate");
@@ -884,6 +886,7 @@ els.startBtn.addEventListener("click", async () => {
     setBar(100);
     if (srtSegments.length) els.dlSrt.style.display = "inline-flex";
   } catch (err) {
+    setBar(0); /* ошибка/отмена — полоса не должна продолжать «бегать» */
     if (err.name === "AbortError") {
       if (transcript.trim()) {
         setStatusHtml('<span class="err">Отменено.</span> Частичный результат сохранён — можно скачать ниже.');
