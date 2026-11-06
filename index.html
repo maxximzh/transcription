@@ -340,6 +340,9 @@
             <option value="openai/whisper-large-v3">Whisper Large V3 — $0,029/час · точнее, ~3× медленнее</option>
             <option value="openai/whisper-1">Whisper-1 (v2, хост OpenAI) — $0,36/час · нет смысла</option>
           </optgroup>
+          <optgroup label="NVIDIA">
+            <option value="nvidia/nemotron-3.5-transcribe">Nemotron 3.5 Transcribe — $0,06/час · топ по русскому, до 1 ч записи</option>
+          </optgroup>
           <optgroup label="С диаризацией (разметка спикеров)">
             <option value="elevenlabs/scribe-v2">ElevenLabs Scribe v2 — $0,11/час · топ качество, спикеры</option>
             <option value="x-ai/grok-stt-1.0">Grok STT 1.0 — $0,10/час · спикеры, word-таймкоды</option>
@@ -446,6 +449,7 @@ const MODELS = {
   "openai/whisper-large-v3-turbo":  { rate: "$0,011/час аудио", ts: true,  diarize: false, hint: "Быстрый и дешёвый, точные сегментные таймкоды." },
   "openai/whisper-large-v3":        { rate: "$0,029/час аудио", ts: true,  diarize: false, hint: "Точнее turbo, но медленнее и дороже." },
   "openai/whisper-1":               { rate: "$0,36/час аудио",  ts: true,  diarize: false, hint: "Старая модель по высокой цене — смысла нет, оставлена для полноты." },
+  "nvidia/nemotron-3.5-transcribe": { rate: "$0,06/час аудио",  ts: true,  diarize: false, hint: "NVIDIA: 40 языков, записи до часа, word-таймкоды. Русский на уровне лучших по бенчмаркам. Диаризация через шлюз не поддерживается." },
   "elevenlabs/scribe-v2":           { rate: "$0,11/час аудио",  ts: true,  diarize: true,  hint: "Топ качество распознавания, word-таймкоды и разметка спикеров. Диаризация может тарифицироваться отдельно." },
   "x-ai/grok-stt-1.0":              { rate: "$0,10/час аудио",  ts: true,  diarize: true,  hint: "Спикеры и word-таймкоды. Диаризация может тарифицироваться отдельно." },
   "google/gemini-3.5-transcribe":   { rate: "~$0,22/час аудио", ts: true,  diarize: true,  hint: "STT от Google: word-таймкоды и спикеры. Тарификация за токены: ~$0,22/час при типичной длине текста, но на болтовне с длинной расшифровкой может быть до ~$0,5/час." },
@@ -504,7 +508,7 @@ els.dz.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "
 ["dragenter", "dragover"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.add("drag"); }));
 ["dragleave", "drop"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.remove("drag"); }));
 els.dz.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) pickFile(f); });
-els.fileInput.addEventListener("change", () => { const f = els.fileInput.files[0]; if (f) pickFile(f); });
+els.fileInput.addEventListener("change", () => { const f = e.target.files[0]; if (f) pickFile(f); });
 els.fremove.addEventListener("click", () => { currentFile = null; els.filecard.classList.remove("visible"); els.warnBox.classList.remove("visible"); refreshStartBtn(); });
 
 function pickFile(f) {
