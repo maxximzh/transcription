@@ -508,7 +508,7 @@ els.dz.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "
 ["dragenter", "dragover"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.add("drag"); }));
 ["dragleave", "drop"].forEach(ev => els.dz.addEventListener(ev, e => { e.preventDefault(); els.dz.classList.remove("drag"); }));
 els.dz.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) pickFile(f); });
-els.fileInput.addEventListener("change", () => { const f = e.target.files[0]; if (f) pickFile(f); });
+els.fileInput.addEventListener("change", () => { const f = els.fileInput.files[0]; if (f) pickFile(f); });
 els.fremove.addEventListener("click", () => { currentFile = null; els.filecard.classList.remove("visible"); els.warnBox.classList.remove("visible"); refreshStartBtn(); });
 
 function pickFile(f) {
